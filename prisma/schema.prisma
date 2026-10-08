@@ -1,0 +1,195 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Photo {
+  id           String       @id @default(cuid())
+  kind         ProductKind  @default(GOWN)
+  title        String
+  slug         String       @unique
+  description  String?
+  chapterId    String?      @map("chapter_id")
+  price        Int?
+  deposit      Int?
+  bust         String?
+  waist        String?
+  length       String?
+  imageUrl     String       @map("image_url")
+  thumbnailUrl String       @map("thumbnail_url")
+  blurDataUrl  String?      @map("blur_data_url")
+  width        Int          @default(0)
+  height       Int          @default(0)
+  sizeBytes    Int          @default(0) @map("size_bytes")
+  storageKey   String?      @map("storage_key")
+  isActive     Boolean      @default(true) @map("is_active")
+  isFeatured   Boolean      @default(false) @map("is_featured")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  chapter      Chapter?     @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  tags         PhotoTag[]
+  images       PhotoImage[]
+  showcases    Showcase[]
+
+  @@index([isActive, kind, createdAt(sort: Desc)])
+  @@index([chapterId])
+  @@index([title])
+  @@map("photos")
+}
+
+/// Foto tambahan (galeri) untuk satu produk.
+model PhotoImage {
+  id           String   @id @default(cuid())
+  photoId      String   @map("photo_id")
+  imageUrl     String   @map("image_url")
+  thumbnailUrl String   @map("thumbnail_url")
+  blurDataUrl  String?  @map("blur_data_url")
+  width        Int      @default(0)
+  height       Int      @default(0)
+  sizeBytes    Int      @default(0) @map("size_bytes")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  photo        Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@index([photoId, sortOrder])
+  @@map("photo_images")
+}
+
+/// Koleksi bertema ("Chapter I: Royal Reveries").
+model Chapter {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  numeral     String?
+  description String?
+  coverUrl    String?  @map("cover_url")
+  coverThumb  String?  @map("cover_thumb")
+  coverBlur   String?  @map("cover_blur")
+  coverBytes  Int      @default(0) @map("cover_bytes")
+  sortOrder   Int      @default(0) @map("sort_order")
+  showInNav   Boolean  @default(false) @map("show_in_nav")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  photos      Photo[]
+
+  @@map("chapters")
+}
+
+model Testimonial {
+  id         String   @id @default(cuid())
+  name       String
+  body       String
+  photoUrl   String?  @map("photo_url")
+  photoThumb String?  @map("photo_thumb")
+  photoBlur  String?  @map("photo_blur")
+  photoBytes Int      @default(0) @map("photo_bytes")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("testimonials")
+}
+
+/// "Worn by" — figur/klien yang memakai koleksi.
+model Showcase {
+  id           String   @id @default(cuid())
+  name         String
+  caption      String?
+  imageUrl     String   @map("image_url")
+  thumbnailUrl String   @map("thumbnail_url")
+  blurDataUrl  String?  @map("blur_data_url")
+  width        Int      @default(0)
+  height       Int      @default(0)
+  sizeBytes    Int      @default(0) @map("size_bytes")
+  photoId      String?  @map("photo_id")
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  photo        Photo?   @relation(fields: [photoId], references: [id], onDelete: SetNull)
+
+  @@map("showcases")
+}
+
+model TagCategory {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  tags      Tag[]
+
+  @@map("tag_categories")
+}
+
+model Tag {
+  id         String      @id @default(cuid())
+  name       String
+  slug       String
+  categoryId String      @map("category_id")
+  sortOrder  Int         @default(0) @map("sort_order")
+  isActive   Boolean     @default(true) @map("is_active")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  category   TagCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  photos     PhotoTag[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@map("tags")
+}
+
+model PhotoTag {
+  photoId String @map("photo_id")
+  tagId   String @map("tag_id")
+  photo   Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([photoId, tagId])
+  @@index([tagId, photoId])
+  @@map("photo_tags")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String   @map("password_hash")
+  role         Role     @default(ADMIN)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([key, createdAt])
+  @@map("login_attempts")
+}
+
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+}
+
+enum ProductKind {
+  GOWN
+  ADDON
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
