@@ -19,7 +19,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx --env-file=.env prisma/seed.ts",
     "db:seed:demo": "tsx --env-file=.env prisma/seed-demo.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:push-prod": "tsx scripts/push-to-production.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

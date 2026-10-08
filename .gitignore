@@ -3,6 +3,7 @@ dist
 uploads
 .env
 .env.local
+.env*.local
 .vercel
 *.log
 *.tsbuildinfo
