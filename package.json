@@ -4,14 +4,14 @@
   "version": "1.0.0",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "concurrently -k -n api,web -c magenta,cyan \"npm:dev:api\" \"npm:dev:web\"",
     "dev:web": "vite",
     "dev:api": "tsx watch --env-file=.env server/dev.ts",
     "build": "prisma generate && tsc -b && vite build",
-    "vercel-build": "prisma generate && prisma migrate deploy && vite build",
+    "vercel-build": "prisma generate && prisma migrate deploy && tsx prisma/seed.ts && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "postinstall": "prisma generate",

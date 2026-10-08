@@ -44,18 +44,15 @@ Di mode lokal, foto disimpan di `./uploads`. Foto demo hanya untuk mencoba tampi
 
 ## Deploy ke Vercel
 
-1. Push repo ke GitHub, lalu **Import Project** di Vercel. Framework Vite terdeteksi otomatis dan `vercel.json` sudah mengatur build serta rewrites.
-2. **Storage → Postgres** (Neon) atau database Postgres lain. Isi env berikut:
-   - `DATABASE_URL`: URL *pooled*
-   - `DIRECT_URL`: URL *non-pooled* (dipakai untuk migrasi)
-3. **Storage → Blob**, hubungkan ke project. `BLOB_READ_WRITE_TOKEN` akan terisi otomatis.
-4. Tambahkan env lainnya: `SESSION_SECRET` (min. 32 karakter acak), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `PUBLIC_SITE_URL`.
-5. Deploy. Perintah `vercel-build` otomatis menjalankan `prisma migrate deploy`.
-6. Sekali saja, jalankan seed ke database produksi dari laptop:
-   ```bash
-   DATABASE_URL="<url produksi>" DIRECT_URL="<url produksi>" ADMIN_EMAIL=... ADMIN_PASSWORD=... npx tsx prisma/seed.ts
-   ```
-7. Login ke `/admin`, lalu ganti password lewat **Pengaturan**.
+1. **Import project.** Di vercel.com: Add New → Project → pilih repo GitHub ini. Framework (Vite), build command, dan output sudah diatur oleh `vercel.json`, jadi jangan diubah.
+2. **Database.** Tab Storage → Create → **Neon** (Postgres). Hubungkan ke project untuk semua environment. Integrasi Neon otomatis mengisi `DATABASE_URL` dan `DATABASE_URL_UNPOOLED`.
+3. **Storage foto.** Tab Storage → Create → **Blob**, pilih akses *public*, lalu hubungkan ke project. `BLOB_READ_WRITE_TOKEN` akan terisi otomatis.
+4. **Environment variables** (Settings → Environment Variables):
+   - `SESSION_SECRET`: string acak min. 32 karakter
+   - `ADMIN_EMAIL` dan `ADMIN_PASSWORD` (min. 8 karakter): akun admin pertama
+   - `PUBLIC_SITE_URL`: mis. `https://nama-proyek.vercel.app`
+5. **Deploy** (atau Redeploy bila env baru ditambahkan). Setiap build menjalankan `prisma migrate deploy` dan seed dasar: akun admin dan tag/chapter awal. Seed tidak pernah menimpa password admin yang sudah ada.
+6. Buka `/admin`, login, lalu ganti password lewat **Pengaturan** dan isi nomor WhatsApp.
 
 Catatan: Vercel membatasi body request ±4.5 MB. Karena itu browser mengecilkan foto (maks. 2400px, JPEG) sebelum upload, lalu server memproses ulang dengan sharp.
 

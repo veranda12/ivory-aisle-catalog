@@ -1,5 +1,6 @@
 // Seed dasar: akun admin pertama + kategori & tag awal.
-// Aman dijalankan berulang (upsert). Jalankan: npm run db:seed
+// Aman dijalankan berulang (upsert) — dijalankan otomatis setiap build di Vercel.
+// Password admin yang sudah ada TIDAK pernah ditimpa. Jalankan manual: npm run db:seed
 import bcrypt from 'bcryptjs'
 import { prisma } from '../server/db.js'
 import { slugify } from '../server/text.js'
@@ -26,12 +27,10 @@ const CHAPTERS = [
 async function main() {
   const email = (process.env.ADMIN_EMAIL ?? '').trim().toLowerCase()
   const password = process.env.ADMIN_PASSWORD ?? ''
+  const existing = email ? await prisma.user.findUnique({ where: { email } }) : null
   if (!email || password.length < 8) {
-    throw new Error('Set ADMIN_EMAIL dan ADMIN_PASSWORD (min. 8 karakter) di .env sebelum seed.')
-  }
-
-  const existing = await prisma.user.findUnique({ where: { email } })
-  if (existing) {
+    console.warn('! ADMIN_EMAIL / ADMIN_PASSWORD (min. 8 karakter) belum di-set — akun admin tidak dibuat.')
+  } else if (existing) {
     console.log(`• Admin ${email} sudah ada — password tidak diubah.`)
   } else {
     await prisma.user.create({
