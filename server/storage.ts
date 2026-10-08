@@ -4,11 +4,12 @@ import path from 'node:path'
 import { HttpError } from './http.js'
 
 // Dua driver:
-//  - Vercel Blob   → dipakai otomatis bila BLOB_READ_WRITE_TOKEN tersedia (produksi).
+//  - Vercel Blob   → dipakai otomatis di produksi. Autentikasi diurus @vercel/blob:
+//                    BLOB_STORE_ID + token OIDC Vercel (cara baru), atau BLOB_READ_WRITE_TOKEN (cara lama).
 //  - Folder lokal  → ./uploads, disajikan Express di /uploads (development).
 export const LOCAL_UPLOAD_DIR = path.resolve(process.cwd(), 'uploads')
 
-const useBlob = () => !!process.env.BLOB_READ_WRITE_TOKEN
+const useBlob = () => !!(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID)
 
 export function storageDriver(): 'vercel-blob' | 'local' {
   return useBlob() ? 'vercel-blob' : 'local'
@@ -25,7 +26,7 @@ export async function putObject(key: string, body: Buffer, contentType: string):
     return blob.url
   }
   if (process.env.VERCEL) {
-    throw new HttpError(500, 'Storage belum dikonfigurasi. Tambahkan Vercel Blob (BLOB_READ_WRITE_TOKEN).')
+    throw new HttpError(500, 'Storage belum dikonfigurasi. Hubungkan Vercel Blob ke project (Storage → Blob).')
   }
   const file = path.join(LOCAL_UPLOAD_DIR, key)
   await mkdir(path.dirname(file), { recursive: true })

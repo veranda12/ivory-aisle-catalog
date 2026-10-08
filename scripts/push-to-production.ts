@@ -34,7 +34,13 @@ function readEnv(file: string): Record<string, string> {
 const local = readEnv('.env')
 const prod = readEnv('.env.production.local')
 if (!prod.DATABASE_URL) throw new Error('DATABASE_URL produksi kosong di .env.production.local')
-if (!prod.BLOB_READ_WRITE_TOKEN) throw new Error('BLOB_READ_WRITE_TOKEN kosong — hubungkan Vercel Blob ke project lalu pull ulang env.')
+// Auth Blob: cara baru (BLOB_STORE_ID + VERCEL_OIDC_TOKEN, berlaku ±12 jam setelah env pull) atau token lama.
+const blobAuth = prod.BLOB_READ_WRITE_TOKEN
+  ? { token: prod.BLOB_READ_WRITE_TOKEN }
+  : prod.BLOB_STORE_ID && prod.VERCEL_OIDC_TOKEN
+    ? { storeId: prod.BLOB_STORE_ID, oidcToken: prod.VERCEL_OIDC_TOKEN }
+    : null
+if (!blobAuth) throw new Error('Kredensial Blob tidak ada — hubungkan Vercel Blob ke project lalu jalankan ulang `vercel env pull`.')
 if (prod.DATABASE_URL === local.DATABASE_URL) throw new Error('DATABASE_URL lokal dan produksi sama — dibatalkan.')
 
 const src = new PrismaClient({ datasourceUrl: local.DATABASE_URL })
@@ -66,7 +72,7 @@ async function migrateUrl(url: string | null): Promise<string | null> {
     contentType: 'image/webp',
     addRandomSuffix: true,
     cacheControlMaxAge: 60 * 60 * 24 * 365,
-    token: prod.BLOB_READ_WRITE_TOKEN,
+    ...blobAuth,
   })
   uploaded.set(url, blob.url)
   return blob.url
